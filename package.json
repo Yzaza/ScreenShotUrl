@@ -1,0 +1,21 @@
+{
+  "name": "screenshot-api",
+  "version": "1.0.0",
+  "description": "A Node.js API to capture screenshots using Puppeteer.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "screenshot",
+    "puppeteer",
+    "api",
+    "nodejs"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+  "express": "^4.18.2",
+  "puppeteer": "^22.8.2"
+}
+}
