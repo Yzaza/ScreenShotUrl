@@ -45,8 +45,11 @@ app.post('/screenshot', async (req, res) => {
 
   let browser;
   try {
-    // Launch headless browser
-    browser = await puppeteer.launch();
+
+	browser = await puppeteer.launch({
+  		headless: 'new', // or true if you're using Puppeteer < 21
+  		args: ['--no-sandbox', '--disable-setuid-sandbox'],
+	});
     const page = await browser.newPage();
 
     // Set viewport if fullPage is false
