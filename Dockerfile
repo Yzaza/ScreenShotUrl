@@ -1,7 +1,7 @@
 # Use the official Node.js image
 FROM node:20-slim
 
-# Install necessary dependencies for Puppeteer
+# Install necessary dependencies for Puppeteer including libdrm2.
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     libatk1.0-0 \
     libcups2 \
     libdbus-1-3 \
+    libdrm2 \
     libgdk-pixbuf2.0-0 \
     libnspr4 \
     libnss3 \
@@ -33,11 +34,11 @@ COPY . .
 # Install Node.js dependencies
 RUN npm install
 
-# Set environment variable for Puppeteer
-ENV PUPPETEER_SKIP_DOWNLOAD=true
+# Set environment variable to skip Chromium download if you want
+# ENV PUPPETEER_SKIP_DOWNLOAD=true
 
-# Expose the port
-EXPOSE 3000
+# Expose the port (make sure this matches what your app uses)
+EXPOSE 8080
 
 # Start the app
 CMD ["node", "index.js"]
