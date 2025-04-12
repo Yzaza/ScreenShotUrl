@@ -1,7 +1,7 @@
-# Use the official Node.js image
+# Use the official Node.js slim image
 FROM node:20-slim
 
-# Install necessary dependencies for Puppeteer/Chromium
+# Install all necessary dependencies for Puppeteer/Chromium
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     libxshmfence1 \
     libgbm1 \
     libdrm2 \
+    libxkbcommon0 \
     xdg-utils \
     --no-install-recommends \
  && apt-get clean \
@@ -31,14 +32,14 @@ RUN apt-get update && apt-get install -y \
 # Set the working directory
 WORKDIR /app
 
-# Copy the application code
+# Copy the application code into the container
 COPY . .
 
 # Install Node.js dependencies
 RUN npm install
 
-# Expose the port (make sure this matches your app configuration)
+# Expose the port (match this to the port your app is listening on)
 EXPOSE 8080
 
-# Start the app
+# Start the application
 CMD ["node", "index.js"]
