@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
  * Description: Captures a screenshot of a webpage using Puppeteer.
  *
  * Query Parameters:
- *   url           : (string)  Required. URL to capture (must include http/https).
+ *   url           : (string)  Required. URL to capture (must include http/https; if missing, "http://" will be prepended).
  *   format        : (string)  Optional. "png" (default) or "jpeg".
  *   width         : (number)  Optional. Viewport width when not using fullPage (default: 1280).
  *   height        : (number)  Optional. Viewport height when not using fullPage (default: 720).
@@ -20,7 +20,7 @@ const port = process.env.PORT || 3000;
  */
 app.get('/screenshot', async (req, res) => {
   // Extract parameters from the query string
-  const {
+  let {
     url,
     format = 'png',
     width = 1280,
@@ -38,6 +38,12 @@ app.get('/screenshot', async (req, res) => {
   if (!url) {
     console.error('No URL provided!');
     return res.status(400).json({ error: 'Parameter "url" is required.' });
+  }
+
+  // Prepend "http://" if the URL doesn't start with http:// or https://
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    console.log(`URL "${url}" does not start with http:// or https://, prepending "http://".`);
+    url = 'http://' + url;
   }
 
   // Convert values to appropriate data types
