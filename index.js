@@ -4,97 +4,93 @@ const puppeteer = require('puppeteer');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware to parse JSON request bodies
-app.use(express.json());
+// Since we're using query parameters, no need for express.json() middleware for now
+// app.use(express.json());
 
 /**
- * POST /screenshot
+ * GET /screenshot
  * Description: Captures a screenshot of a webpage using Puppeteer.
  *
- * Request Body (JSON):
- * {
- *   "url": "https://example.com",   // Required. URL to capture.
- *   "format": "png",                // Optional. "png" or "jpeg". Default is "png".
- *   "width": 1280,                  // Optional. Viewport width when not using fullPage.
- *   "height": 720,                  // Optional. Viewport height when not using fullPage.
- *   "fullPage": false,              // Optional. Boolean flag to capture full page.
- *   "waitTime": 0,                  // Optional. Time in milliseconds to wait before screenshot.
- *   "hideSelectors": [".ad"],       // Optional. Array of CSS selectors to hide.
- *   "customJS": "window.scrollTo(0, document.body.scrollHeight);" // Optional. Custom JS to execute.
- * }
- *
- * Response:
- * - On success: Returns the screenshot image with the appropriate content-type.
- * - On error: Returns a JSON error message.
+ * Query Parameters:
+ *   url            : (string) Required. URL to capture.
+ *   format         : (string) Optional. "png" (default) or "jpeg".
+ *   width          : (number) Optional. Viewport width when not using fullPage (default: 1280).
+ *   height         : (number) Optional. Viewport height when not using fullPage (default: 720).
+ *   fullPage       : (boolean) Optional. Whether to capture the full page. (default: false).
+ *   waitTime       : (number) Optional. Time in milliseconds to wait before taking the screenshot (default: 0).
+ *   hideSelectors  : (string) Optional. Comma-separated list of CSS selectors to hide.
+ *   customJS       : (string) Optional. Custom JS code to execute before capturing.
  */
-app.post('/screenshot', async (req, res) => {
+app.get('/screenshot', async (req, res) => {
+  // Read parameters from req.query
   const {
     url,
     format = 'png',
     width = 1280,
     height = 720,
-    fullPage = false,
+    fullPage = 'false',
     waitTime = 0,
-    hideSelectors = [],
+    hideSelectors,
     customJS = ''
-  } = req.body;
+  } = req.query;
 
   if (!url) {
     return res.status(400).json({ error: 'Parameter "url" is required.' });
   }
 
+  // Convert string values to their proper data types
+  const fullPageBool = fullPage.toLowerCase() === 'true';
+  const waitTimeNum = parseInt(waitTime, 10);
+  const widthNum = parseInt(width, 10);
+  const heightNum = parseInt(height, 10);
+  // hideSelectors: if provided as comma-separated list, split it into an array
+  const hideSelectorsArray = hideSelectors ? hideSelectors.split(',') : [];
+
   let browser;
   try {
-
-	browser = await puppeteer.launch({
-  		headless: 'new', // or true if you're using Puppeteer < 21
-  		args: ['--no-sandbox', '--disable-setuid-sandbox'],
-	});
+    browser = await puppeteer.launch();
     const page = await browser.newPage();
 
-    // Set viewport if fullPage is false
-    if (!fullPage) {
-      await page.setViewport({ width, height });
+    // Set viewport if not capturing full page
+    if (!fullPageBool) {
+      await page.setViewport({ width: widthNum, height: heightNum });
     }
 
-    // Navigate to the URL
+    // Navigate to the URL (must be valid, e.g., include http/https)
     await page.goto(url, { waitUntil: 'networkidle2' });
 
-    // Hide specified elements
-    if (Array.isArray(hideSelectors) && hideSelectors.length > 0) {
+    // Hide specified elements, if any
+    if (hideSelectorsArray.length > 0) {
       await page.evaluate((selectors) => {
         selectors.forEach(selector => {
           document.querySelectorAll(selector).forEach(el => {
             el.style.visibility = 'hidden';
           });
         });
-      }, hideSelectors);
+      }, hideSelectorsArray);
     }
 
     // Execute custom JavaScript if provided
     if (customJS && customJS.trim() !== '') {
       await page.evaluate((code) => {
-        // Using eval in the page context to run custom JS
         eval(code);
       }, customJS);
     }
 
     // Wait for additional time if specified
-    if (waitTime > 0) {
-      // Wait for additional time if specified
-
-	  await new Promise(resolve => setTimeout(resolve, waitTime));
+    if (waitTimeNum > 0) {
+      await new Promise(resolve => setTimeout(resolve, waitTimeNum));
     }
 
     // Capture screenshot
     const screenshotBuffer = await page.screenshot({
       type: format === 'jpeg' ? 'jpeg' : 'png',
-      fullPage: fullPage
+      fullPage: fullPageBool
     });
 
     await browser.close();
 
-    // Set content type and send the image
+    // Return the screenshot with the proper content type
     res.contentType(`image/${format === 'jpeg' ? 'jpeg' : 'png'}`);
     res.send(screenshotBuffer);
   } catch (error) {
