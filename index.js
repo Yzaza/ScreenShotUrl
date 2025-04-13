@@ -31,8 +31,12 @@ app.get('/screenshot', async (req, res) => {
     customJS = ''
   } = req.query;
 
+  // Debug: log the raw incoming query
+  console.log('Incoming query parameters:', req.query);
+
   // URL is required—return error if missing
   if (!url) {
+    console.error('No URL provided!');
     return res.status(400).json({ error: 'Parameter "url" is required.' });
   }
 
@@ -42,6 +46,17 @@ app.get('/screenshot', async (req, res) => {
   const widthNum = parseInt(width, 10);
   const heightNum = parseInt(height, 10);
   const hideSelectorsArray = hideSelectors ? hideSelectors.split(',') : [];
+
+  // Debug: log the converted values
+  console.log('Converted parameters:');
+  console.log('  url:', url);
+  console.log('  format:', format);
+  console.log('  width:', widthNum);
+  console.log('  height:', heightNum);
+  console.log('  fullPage:', fullPageBool);
+  console.log('  waitTime:', waitTimeNum);
+  console.log('  hideSelectors:', hideSelectorsArray);
+  console.log('  customJS:', customJS);
 
   let browser;
   try {
@@ -56,11 +71,15 @@ app.get('/screenshot', async (req, res) => {
       await page.setViewport({ width: widthNum, height: heightNum });
     }
 
+    // Debug: log before navigation
+    console.log(`Navigating to: ${url}`);
+    
     // Navigate to the specified URL (must include http/https)
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     // Hide any specified elements by CSS selectors
     if (hideSelectorsArray.length > 0) {
+      console.log('Hiding selectors:', hideSelectorsArray);
       await page.evaluate((selectors) => {
         selectors.forEach(selector => {
           document.querySelectorAll(selector).forEach(el => {
@@ -72,13 +91,13 @@ app.get('/screenshot', async (req, res) => {
 
     // Execute custom JavaScript if provided
     if (customJS && customJS.trim() !== '') {
-      await page.evaluate((code) => {
-        eval(code);
-      }, customJS);
+      console.log('Executing custom JS');
+      await page.evaluate((code) => { eval(code); }, customJS);
     }
 
     // Wait additional time if specified
     if (waitTimeNum > 0) {
+      console.log(`Waiting for ${waitTimeNum} milliseconds`);
       await new Promise(resolve => setTimeout(resolve, waitTimeNum));
     }
 
@@ -90,7 +109,7 @@ app.get('/screenshot', async (req, res) => {
 
     await browser.close();
 
-    // Set the appropriate content type and send back the screenshot
+    // Return the screenshot with the proper content type
     res.contentType(`image/${format === 'jpeg' ? 'jpeg' : 'png'}`);
     res.send(screenshotBuffer);
   } catch (error) {
